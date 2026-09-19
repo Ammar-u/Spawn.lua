@@ -1,6 +1,7 @@
--- Blox Fruits Real-Mesh Visual Rain v3
+-- Blox Fruits Real-Mesh Visual Rain v3 (Fixed Loop Engine)
 local Players = game:GetService("Players")
 local SoundService = game:GetService("SoundService")
+local Workspace = game:GetService("Workspace")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -64,7 +65,6 @@ StatusLabel.TextSize = 14
 StatusLabel.ZIndex = 2
 StatusLabel.Parent = MainFrame
 
--- Official Game Asset IDs for Fruit Mesh rendering
 local FruitList = {
     {name = "Kitsune", mesh = "rbxassetid://15545227129", tex = "rbxassetid://15545227110", color = Color3.fromRGB(255, 100, 150)},
     {name = "Dragon", mesh = "rbxassetid://4991166487", tex = "rbxassetid://4991166472", color = Color3.fromRGB(80, 20, 20)},
@@ -91,24 +91,24 @@ ButtonCorner.Parent = RainButton
 
 local rainActive = false
 
--- Handles background falling and interactive picking touch states locally
 task.spawn(function()
     local rng = Random.new()
     while true do
-        task.wait(0.6) -- Adjust timing interval for fruit drop rates
+        task.wait(0.4)
         if rainActive and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
             local chosenData = FruitList[rng:NextInteger(1, #FruitList)]
             
-            -- Create a local equippable Tool box container instance
-            local localTool = Instance.new("Tool")
-            localTool.Name = chosenData.name .. " Fruit"
-            localTool.RequiresHandle = true
-            
+            local localFruitModel = Instance.new("Model")
+            localFruitModel.Name = chosenData.name .. " Fruit"
+            localFruitModel.Parent = Workspace
+
             local handle = Instance.new("MeshPart")
             handle.Name = "Handle"
             handle.Size = Vector3.new(1.8, 1.8, 1.8)
-            handle.CanCollide = true -- Allows it to hit the ground naturally
+            handle.CanCollide = false
+            handle.Anchored = true
             handle.Color = chosenData.color
+            handle.Parent = localFruitModel
             
             pcall(function()
                 handle.MeshId = chosenData.mesh
@@ -116,47 +116,76 @@ task.spawn(function()
                     handle.TextureID = chosenData.tex
                 end
             end)
-            
-            handle.Parent = localTool
-            
-            -- Set local spawn trajectory drops right over player surroundings
+
+            local bbGui = Instance.new("BillboardGui")
+            bbGui.Size = UDim2.new(0, 100, 0, 40)
+            bbGui.Adornee = handle
+            bbGui.AlwaysOnTop = true
+            bbGui.Parent = handle
+
+            local textLabel = Instance.new("TextLabel")
+            textLabel.Size = UDim2.new(1, 0, 1, 0)
+            textLabel.BackgroundTransparency = 1
+            textLabel.Text = "[Touch to Pick]"
+            textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            textLabel.Font = Enum.Font.GothamBold
+            textLabel.TextSize = 12
+            textLabel.Parent = bbGui
+
             local rootPos = LocalPlayer.Character.HumanoidRootPart.Position
-            handle.Position = rootPos + Vector3.new(rng:NextNumber(-25, 25), 45, rng:NextNumber(-25, 25))
+            local startX = rootPos.X + rng:NextNumber(-30, 30)
+            local startZ = rootPos.Z + rng:NextNumber(-30, 30)
+            local startY = rootPos.Y + 40
             
-            -- Place in client directory workspace structure safely
-            localTool.Parent = workspace
+            handle.Position = Vector3.new(startX, startY, startZ)
             
-            -- Trigger immediate pickup on touch locally
-            local connection
-            connection = handle.Touched:Connect(function(hit)
-                local char = LocalPlayer.Character
-                if char and hit:IsDescendantOf(char) and char:FindFirstChild("Humanoid") then
-                    connection:Disconnect()
-                    char.Humanoid:EquipTool(localTool)
-                    StatusLabel.Text = "Status: Successfully Picked Up!"
-                    StatusLabel.TextColor3 = Color3.fromRGB(85, 255, 85)
-                    task.delay(2, function()
-                        if StatusLabel.Text == "Status: Successfully Picked Up!" then
-                            StatusLabel.Text = "System Status: Active"
+            task.spawn(function()
+                local currentY = startY
+                local targetY = rootPos.Y - 3
+                
+                while currentY > targetY and localFruitModel.Parent ~= nil do
+                    currentY = currentY - 1.2
+                    handle.Position = Vector3.new(startX, currentY, startZ)
+                    
+                    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                        local dist = (handle.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                        if dist < 4.5 then
+                            local localTool = Instance.new("Tool")
+                            localTool.Name = chosenData.name .. " Fruit"
+                            localTool.RequiresHandle = true
+                            
+                            local toolHandle = Instance.new("MeshPart")
+                            toolHandle.Name = "Handle"
+                            toolHandle.Size = Vector3.new(1.8, 1.8, 1.8)
+                            toolHandle.Color = chosenData.color
+                            pcall(function()
+                                toolHandle.MeshId = chosenData.mesh
+                                if chosenData.tex ~= "" then toolHandle.TextureID = chosenData.tex end
+                            end)
+                            toolHandle.Parent = localTool
+                            
+                            LocalPlayer.Character.Humanoid:EquipTool(localTool)
+                            
+                            StatusLabel.Text = "Status: Successfully Picked Up!"
                             StatusLabel.TextColor3 = Color3.fromRGB(85, 255, 85)
+                            
+                            localFruitModel:Destroy()
+                            break
                         end
-                    end)
+                    end
+                    task.wait(0.02)
                 end
-            end)
-            
-            -- Automatically cleans uncollected debris drop boxes after 15 seconds
-            task.delay(15, function()
-                if localTool and localTool.Parent == workspace then
-                    if connection then connection:Disconnect() end
-                    localTool:Destroy()
-                end
+                
+                task.wait(5)
+                if localFruitModel then localFruitModel:Destroy() end
             end)
         end
     end
 end)
 
 RainButton.MouseButton1Click:Connect(function()
-    rainActive = not rainActive
+    not active = not rainActive
+    rainActive = not active
     
     local clickSound = Instance.new("Sound")
     clickSound.SoundId = "rbxassetid://12221967"
@@ -180,7 +209,6 @@ RainButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- Close Button
 local CloseButton = Instance.new("TextButton")
 CloseButton.Name = "CloseButton"
 CloseButton.Size = UDim2.new(0, 30, 0, 30)
@@ -198,7 +226,6 @@ CloseButton.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
--- Sparking Loop
 task.spawn(function()
     local rng = Random.new()
     while ScreenGui.Parent do
