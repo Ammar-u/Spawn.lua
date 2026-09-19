@@ -1,4 +1,4 @@
--- Blox Fruits Real-Mesh Visual Rain v3 (Fixed Execution)
+-- Blox Fruits Real-Mesh Visual Rain v5 (Final Fixed Engine)
 local Players = game:GetService("Players")
 local SoundService = game:GetService("SoundService")
 local Workspace = game:GetService("Workspace")
@@ -6,12 +6,12 @@ local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
-if PlayerGui:FindFirstChild("FruitRainV3Screen") then
-    PlayerGui.FruitRainV3Screen:Destroy()
+if PlayerGui:FindFirstChild("FruitRainV5Screen") then
+    PlayerGui.FruitRainV5Screen:Destroy()
 end
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "FruitRainV3Screen"
+ScreenGui.Name = "FruitRainV5Screen"
 ScreenGui.Parent = PlayerGui
 ScreenGui.ResetOnSpawn = false
 
@@ -46,7 +46,7 @@ local Title = Instance.new("TextLabel")
 Title.Name = "Title"
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "FRUIT RAIN v3"
+Title.Text = "FRUIT RAIN v5"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 18
@@ -102,23 +102,25 @@ task.spawn(function()
             localFruitModel.Name = chosenData.name .. " Fruit"
             localFruitModel.Parent = Workspace
 
-            local handle = Instance.new("MeshPart")
+            local handle = Instance.new("Part")
             handle.Name = "Handle"
-            handle.Size = Vector3.new(1.8, 1.8, 1.8)
+            handle.Size = Vector3.new(2, 2, 2)
             handle.CanCollide = false
             handle.Anchored = true
             handle.Color = chosenData.color
             handle.Parent = localFruitModel
-            
-            pcall(function()
-                handle.MeshId = chosenData.mesh
-                if chosenData.tex ~= "" then
-                    handle.TextureID = chosenData.tex
-                end
-            end)
+
+            local visualMesh = Instance.new("SpecialMesh")
+            visualMesh.MeshType = Enum.MeshType.FileMesh
+            visualMesh.MeshId = chosenData.mesh
+            if chosenData.tex ~= "" then
+                visualMesh.TextureId = chosenData.tex
+            end
+            visualMesh.Scale = Vector3.new(1.2, 1.2, 1.2)
+            visualMesh.Parent = handle
 
             local bbGui = Instance.new("BillboardGui")
-            bbGui.Size = UDim2.new(0, 100, 0, 40)
+            bbGui.Size = UDim2.new(0, 120, 0, 40)
             bbGui.Adornee = handle
             bbGui.AlwaysOnTop = true
             bbGui.Parent = handle
@@ -126,7 +128,7 @@ task.spawn(function()
             local textLabel = Instance.new("TextLabel")
             textLabel.Size = UDim2.new(1, 0, 1, 0)
             textLabel.BackgroundTransparency = 1
-            textLabel.Text = "[Touch to Pick]"
+            textLabel.Text = chosenData.name .. "\n[Touch to Pick]"
             textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
             textLabel.Font = Enum.Font.GothamBold
             textLabel.TextSize = 12
@@ -154,15 +156,20 @@ task.spawn(function()
                             localTool.Name = chosenData.name .. " Fruit"
                             localTool.RequiresHandle = true
                             
-                            local toolHandle = Instance.new("MeshPart")
+                            local toolHandle = Instance.new("Part")
                             toolHandle.Name = "Handle"
                             toolHandle.Size = Vector3.new(1.8, 1.8, 1.8)
                             toolHandle.Color = chosenData.color
-                            pcall(function()
-                                toolHandle.MeshId = chosenData.mesh
-                                if chosenData.tex ~= "" then toolHandle.TextureID = chosenData.tex end
-                            end)
                             toolHandle.Parent = localTool
+
+                            local toolMesh = Instance.new("SpecialMesh")
+                            toolMesh.MeshType = Enum.MeshType.FileMesh
+                            toolMesh.MeshId = chosenData.mesh
+                            if chosenData.tex ~= "" then
+                                toolMesh.TextureId = chosenData.tex
+                            end
+                            toolMesh.Scale = Vector3.new(1, 1, 1)
+                            toolMesh.Parent = toolHandle
                             
                             LocalPlayer.Character.Humanoid:EquipTool(localTool)
                             
