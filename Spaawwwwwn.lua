@@ -1,4 +1,4 @@
--- Blox Fruits Real-Mesh Visual Rain v3 (Fixed Loop Engine)
+-- Blox Fruits Real-Mesh Visual Rain v3 (Fixed Execution)
 local Players = game:GetService("Players")
 local SoundService = game:GetService("SoundService")
 local Workspace = game:GetService("Workspace")
@@ -184,8 +184,7 @@ task.spawn(function()
 end)
 
 RainButton.MouseButton1Click:Connect(function()
-    not active = not rainActive
-    rainActive = not active
+    rainActive = not rainActive
     
     local clickSound = Instance.new("Sound")
     clickSound.SoundId = "rbxassetid://12221967"
