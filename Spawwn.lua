@@ -1,4 +1,4 @@
--- Roblox Fruit Spawner Visual Menu v1
+-- Roblox Client-Side Tool Spawner v2
 local Players = game:GetService("Players")
 local SoundService = game:GetService("SoundService")
 
@@ -6,13 +6,13 @@ local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 -- Prevent duplicate GUIs from stacking
-if PlayerGui:FindFirstChild("FruitSpawnerScreen") then
-    PlayerGui.FruitSpawnerScreen:Destroy()
+if PlayerGui:FindFirstChild("LocalSpawnerScreen") then
+    PlayerGui.LocalSpawnerScreen:Destroy()
 end
 
 -- Create ScreenGui inside PlayerGui
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "FruitSpawnerScreen"
+ScreenGui.Name = "LocalSpawnerScreen"
 ScreenGui.Parent = PlayerGui
 ScreenGui.ResetOnSpawn = false
 
@@ -50,21 +50,21 @@ local Title = Instance.new("TextLabel")
 Title.Name = "Title"
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "FRUIT SPAWNER v1"
+Title.Text = "FRUIT SPAWNER v2"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 18
 Title.ZIndex = 2
 Title.Parent = MainFrame
 
--- Fruit Input TextBox
+-- Input Box
 local TextBox = Instance.new("TextBox")
 TextBox.Name = "FruitInput"
 TextBox.Size = UDim2.new(0, 260, 0, 40)
 TextBox.Position = UDim2.new(0.5, -130, 0, 60)
 TextBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 TextBox.Text = ""
-TextBox.PlaceholderText = "Enter Fruit Name (e.g. Dragon)..."
+TextBox.PlaceholderText = "Type Fruit Name..."
 TextBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 120)
 TextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 TextBox.Font = Enum.Font.GothamSemibold
@@ -89,13 +89,13 @@ StatusLabel.TextSize = 14
 StatusLabel.ZIndex = 2
 StatusLabel.Parent = MainFrame
 
--- Fake Spawn Button (Moves item from real BackPack inventory to character hands)
+-- Spawn Button
 local SpawnButton = Instance.new("TextButton")
 SpawnButton.Name = "SpawnButton"
 SpawnButton.Size = UDim2.new(0, 260, 0, 45)
 SpawnButton.Position = UDim2.new(0.5, -130, 0, 120)
 SpawnButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-SpawnButton.Text = "SPAWN FRUIT"
+SpawnButton.Text = "SPAWN TO HAND"
 SpawnButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 SpawnButton.Font = Enum.Font.GothamBold
 SpawnButton.TextSize = 15
@@ -107,9 +107,17 @@ ButtonCorner.CornerRadius = UDim.new(0, 8)
 ButtonCorner.Parent = SpawnButton
 
 SpawnButton.MouseButton1Click:Connect(function()
-    local inputName = string.lower(TextBox.Text):gsub("%s+", "")
-    
-    -- Play visual click sound
+    local fruitName = TextBox.Text
+    if fruitName == "" then fruitName = "Fruit" end
+
+    local character = LocalPlayer.Character
+    if not character or not character:FindFirstChild("Humanoid") then
+        StatusLabel.Text = "Error: Character not found!"
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 85, 85)
+        return
+    end
+
+    -- Create local audio playback
     local clickSound = Instance.new("Sound")
     clickSound.SoundId = "rbxassetid://12221967"
     clickSound.Volume = 0.5
@@ -117,34 +125,26 @@ SpawnButton.MouseButton1Click:Connect(function()
     clickSound:Play()
     game:GetService("Debris"):AddItem(clickSound, 1)
 
-    if inputName == "" then
-        StatusLabel.Text = "Error: Please enter a fruit name!"
-        StatusLabel.TextColor3 = Color3.fromRGB(255, 85, 85)
-        return
-    end
+    -- Build a custom local tool structure
+    local newTool = Instance.new("Tool")
+    newTool.Name = fruitName .. " (Visual)"
+    newTool.RequiresHandle = true
 
-    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    local backpack = LocalPlayer:WaitForChild("Backpack")
-    local foundItem = nil
+    -- Define properties for the physical item handle
+    local handle = Instance.new("Part")
+    handle.Name = "Handle"
+    handle.Size = Vector3.new(1.2, 1.2, 1.2)
+    handle.Shape = Enum.PartType.Ball
+    handle.Color = Color3.fromRGB(235, 60, 60) -- Neon Red Visual look
+    handle.Material = Enum.Material.Neon
+    handle.Parent = newTool
 
-    -- Look for a tool matching the text inside the player's real inventory folder
-    for _, item in ipairs(backpack:GetChildren()) do
-        if item:IsA("Tool") and string.lower(item.Name):gsub("%s+", ""):find(inputName) then
-            foundItem = item
-            break
-        end
-    end
+    -- Force equip the client-only tool directly into your hand
+    character.Humanoid:EquipTool(newTool)
 
-    if foundItem then
-        -- Forces the character to equip it directly into their hand
-        LocalPlayer.Character.Humanoid:EquipTool(foundItem)
-        StatusLabel.Text = "Status: Successfully Spawned!"
-        StatusLabel.TextColor3 = Color3.fromRGB(85, 255, 85)
-    else
-        StatusLabel.Text = "Error: Fruit not found in database!"
-        StatusLabel.TextColor3 = Color3.fromRGB(255, 85, 85)
-    end
-    
+    StatusLabel.Text = "Status: Successfully Spawned!"
+    StatusLabel.TextColor3 = Color3.fromRGB(85, 255, 85)
+
     task.delay(3, function()
         StatusLabel.Text = "System Status: Idle"
         StatusLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
