@@ -1,4 +1,4 @@
--- Blox Fruits Real-Mesh Visual Rain v5 (Final Fixed Engine)
+-- Blox Fruits Real-Mesh Visual Rain v6 (Complete Workspace Render Engine)
 local Players = game:GetService("Players")
 local SoundService = game:GetService("SoundService")
 local Workspace = game:GetService("Workspace")
@@ -6,12 +6,12 @@ local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
-if PlayerGui:FindFirstChild("FruitRainV5Screen") then
-    PlayerGui.FruitRainV5Screen:Destroy()
+if PlayerGui:FindFirstChild("FruitRainV6Screen") then
+    PlayerGui.FruitRainV6Screen:Destroy()
 end
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "FruitRainV5Screen"
+ScreenGui.Name = "FruitRainV6Screen"
 ScreenGui.Parent = PlayerGui
 ScreenGui.ResetOnSpawn = false
 
@@ -46,7 +46,7 @@ local Title = Instance.new("TextLabel")
 Title.Name = "Title"
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "FRUIT RAIN v5"
+Title.Text = "FRUIT RAIN v6"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 18
@@ -98,17 +98,15 @@ task.spawn(function()
         if rainActive and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
             local chosenData = FruitList[rng:NextInteger(1, #FruitList)]
             
-            local localFruitModel = Instance.new("Model")
-            localFruitModel.Name = chosenData.name .. " Fruit"
-            localFruitModel.Parent = Workspace
-
+            -- Rebuilt using high-level safe engine properties to guarantee local runtime execution renders correctly
             local handle = Instance.new("Part")
             handle.Name = "Handle"
-            handle.Size = Vector3.new(2, 2, 2)
+            handle.Size = Vector3.new(2.5, 2.5, 2.5)
             handle.CanCollide = false
             handle.Anchored = true
             handle.Color = chosenData.color
-            handle.Parent = localFruitModel
+            handle.Material = Enum.Material.SmoothPlastic
+            handle.Parent = Workspace
 
             local visualMesh = Instance.new("SpecialMesh")
             visualMesh.MeshType = Enum.MeshType.FileMesh
@@ -116,7 +114,7 @@ task.spawn(function()
             if chosenData.tex ~= "" then
                 visualMesh.TextureId = chosenData.tex
             end
-            visualMesh.Scale = Vector3.new(1.2, 1.2, 1.2)
+            visualMesh.Scale = Vector3.new(1.4, 1.4, 1.4)
             visualMesh.Parent = handle
 
             local bbGui = Instance.new("BillboardGui")
@@ -135,9 +133,9 @@ task.spawn(function()
             textLabel.Parent = bbGui
 
             local rootPos = LocalPlayer.Character.HumanoidRootPart.Position
-            local startX = rootPos.X + rng:NextNumber(-30, 30)
-            local startZ = rootPos.Z + rng:NextNumber(-30, 30)
-            local startY = rootPos.Y + 40
+            local startX = rootPos.X + rng:NextNumber(-25, 25)
+            local startZ = rootPos.Z + rng:NextNumber(-25, 25)
+            local startY = rootPos.Y + 35
             
             handle.Position = Vector3.new(startX, startY, startZ)
             
@@ -145,13 +143,13 @@ task.spawn(function()
                 local currentY = startY
                 local targetY = rootPos.Y - 3
                 
-                while currentY > targetY and localFruitModel.Parent ~= nil do
+                while currentY > targetY and handle.Parent ~= nil do
                     currentY = currentY - 1.2
                     handle.Position = Vector3.new(startX, currentY, startZ)
                     
                     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                         local dist = (handle.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-                        if dist < 4.5 then
+                        if dist < 5.0 then
                             local localTool = Instance.new("Tool")
                             localTool.Name = chosenData.name .. " Fruit"
                             localTool.RequiresHandle = true
@@ -176,15 +174,15 @@ task.spawn(function()
                             StatusLabel.Text = "Status: Successfully Picked Up!"
                             StatusLabel.TextColor3 = Color3.fromRGB(85, 255, 85)
                             
-                            localFruitModel:Destroy()
+                            handle:Destroy()
                             break
                         end
                     end
                     task.wait(0.02)
                 end
                 
-                task.wait(5)
-                if localFruitModel then localFruitModel:Destroy() end
+                task.wait(6)
+                if handle then handle:Destroy() end
             end)
         end
     end
