@@ -1,22 +1,19 @@
--- Roblox Client-Side Tool Spawner v2
+-- Blox Fruits Real-Mesh Visual Spawner v2
 local Players = game:GetService("Players")
 local SoundService = game:GetService("SoundService")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- Prevent duplicate GUIs from stacking
-if PlayerGui:FindFirstChild("LocalSpawnerScreen") then
-    PlayerGui.LocalSpawnerScreen:Destroy()
+if PlayerGui:FindFirstChild("RealFruitSpawnerScreen") then
+    PlayerGui.RealFruitSpawnerScreen:Destroy()
 end
 
--- Create ScreenGui inside PlayerGui
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "LocalSpawnerScreen"
+ScreenGui.Name = "RealFruitSpawnerScreen"
 ScreenGui.Parent = PlayerGui
 ScreenGui.ResetOnSpawn = false
 
--- Create Main Frame (Draggable Menu)
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 320, 0, 240)
@@ -31,7 +28,6 @@ local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 12)
 MainCorner.Parent = MainFrame
 
--- Sparking Background Panel
 local BackgroundAnim = Instance.new("Frame")
 BackgroundAnim.Name = "BackgroundAnim"
 BackgroundAnim.Size = UDim2.new(1, -6, 1, -6)
@@ -45,7 +41,6 @@ local AnimCorner = Instance.new("UICorner")
 AnimCorner.CornerRadius = UDim.new(0, 10)
 AnimCorner.Parent = BackgroundAnim
 
--- Title Text
 local Title = Instance.new("TextLabel")
 Title.Name = "Title"
 Title.Size = UDim2.new(1, 0, 0, 40)
@@ -57,14 +52,13 @@ Title.TextSize = 18
 Title.ZIndex = 2
 Title.Parent = MainFrame
 
--- Input Box
 local TextBox = Instance.new("TextBox")
 TextBox.Name = "FruitInput"
 TextBox.Size = UDim2.new(0, 260, 0, 40)
 TextBox.Position = UDim2.new(0.5, -130, 0, 60)
 TextBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 TextBox.Text = ""
-TextBox.PlaceholderText = "Type Fruit Name..."
+TextBox.PlaceholderText = "Type Fruit Name (e.g., Kitsune)..."
 TextBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 120)
 TextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 TextBox.Font = Enum.Font.GothamSemibold
@@ -76,7 +70,6 @@ local TextCorner = Instance.new("UICorner")
 TextCorner.CornerRadius = UDim.new(0, 8)
 TextCorner.Parent = TextBox
 
--- Status Label
 local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Name = "StatusLabel"
 StatusLabel.Size = UDim2.new(1, 0, 0, 30)
@@ -89,13 +82,22 @@ StatusLabel.TextSize = 14
 StatusLabel.ZIndex = 2
 StatusLabel.Parent = MainFrame
 
--- Spawn Button
+-- Official Assets database mapping to load game meshes locally
+local FruitDatabase = {
+    ["kitsune"] = {mesh = "rbxassetid://15545227129", tex = "rbxassetid://15545227110", color = Color3.fromRGB(255, 100, 150)},
+    ["dragon"] = {mesh = "rbxassetid://4991166487", tex = "rbxassetid://4991166472", color = Color3.fromRGB(80, 20, 20)},
+    ["leopard"] = {mesh = "rbxassetid://11181285227", tex = "rbxassetid://11181285194", color = Color3.fromRGB(220, 180, 100)},
+    ["dough"] = {mesh = "rbxassetid://9733471018", tex = "rbxassetid://9733470984", color = Color3.fromRGB(240, 230, 210)},
+    ["magma"] = {mesh = "rbxassetid://5117361952", tex = "rbxassetid://5117361937", color = Color3.fromRGB(255, 60, 0)},
+    ["default"] = {mesh = "rbxassetid://430030048", tex = "", color = Color3.fromRGB(200, 50, 50)}
+}
+
 local SpawnButton = Instance.new("TextButton")
 SpawnButton.Name = "SpawnButton"
 SpawnButton.Size = UDim2.new(0, 260, 0, 45)
 SpawnButton.Position = UDim2.new(0.5, -130, 0, 120)
 SpawnButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-SpawnButton.Text = "SPAWN TO HAND"
+SpawnButton.Text = "SPAWN REAL VISUAL"
 SpawnButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 SpawnButton.Font = Enum.Font.GothamBold
 SpawnButton.TextSize = 15
@@ -107,17 +109,15 @@ ButtonCorner.CornerRadius = UDim.new(0, 8)
 ButtonCorner.Parent = SpawnButton
 
 SpawnButton.MouseButton1Click:Connect(function()
-    local fruitName = TextBox.Text
-    if fruitName == "" then fruitName = "Fruit" end
-
+    local cleanName = string.lower(TextBox.Text):gsub("%s+", "")
     local character = LocalPlayer.Character
+    
     if not character or not character:FindFirstChild("Humanoid") then
-        StatusLabel.Text = "Error: Character not found!"
+        StatusLabel.Text = "Error: Character model missing!"
         StatusLabel.TextColor3 = Color3.fromRGB(255, 85, 85)
         return
     end
 
-    -- Create local audio playback
     local clickSound = Instance.new("Sound")
     clickSound.SoundId = "rbxassetid://12221967"
     clickSound.Volume = 0.5
@@ -125,21 +125,32 @@ SpawnButton.MouseButton1Click:Connect(function()
     clickSound:Play()
     game:GetService("Debris"):AddItem(clickSound, 1)
 
-    -- Build a custom local tool structure
+    local targetFruit = FruitDatabase[cleanName] or FruitDatabase["default"]
+    
+    -- Construct a proper Local equippable tool structure
+    local cleanToolName = cleanName ~= "" and TextBox.Text or "Fruit"
     local newTool = Instance.new("Tool")
-    newTool.Name = fruitName .. " (Visual)"
+    newTool.Name = cleanToolName .. " Fruit"
     newTool.RequiresHandle = true
 
-    -- Define properties for the physical item handle
-    local handle = Instance.new("Part")
+    -- Create Handle MeshPart to display official asset graphics
+    local handle = Instance.new("MeshPart")
     handle.Name = "Handle"
-    handle.Size = Vector3.new(1.2, 1.2, 1.2)
-    handle.Shape = Enum.PartType.Ball
-    handle.Color = Color3.fromRGB(235, 60, 60) -- Neon Red Visual look
-    handle.Material = Enum.Material.Neon
+    handle.Size = Vector3.new(1.8, 1.8, 1.8)
+    handle.CanCollide = false
+    
+    -- Safe execution injection of meshes safely
+    pcall(function()
+        handle.MeshId = targetFruit.mesh
+        if targetFruit.tex ~= "" then
+            handle.TextureID = targetFruit.tex
+        end
+    end)
+    
+    handle.Color = targetFruit.color
     handle.Parent = newTool
 
-    -- Force equip the client-only tool directly into your hand
+    -- Attaches directly into the character right hand locally
     character.Humanoid:EquipTool(newTool)
 
     StatusLabel.Text = "Status: Successfully Spawned!"
